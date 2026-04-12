@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sát hạch Prompt Engineering - Tư pháp & Hành chính</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #002244;
+            --gold: #C5A059;
+        }
+        body { font-family: 'Inter', sans-serif; background: #f4f6f9; color: var(--primary); }
+        .serif { font-family: 'Playfair Display', serif; }
+        .cursive { font-family: 'Dancing Script', cursive; }
+        .btn-justice { background: var(--primary); color: white; border: 1px solid var(--gold); transition: all 0.3s; }
+        .btn-justice:hover { background: #003366; transform: translateY(-1px); }
+        .correct-opt { border-color: #059669 !important; background-color: #f0fdf4 !important; }
+        .wrong-opt { border-color: #dc2626 !important; background-color: #fef2f2 !important; }
+        
+        /* Layout PDF - Theo mẫu ảnh đính kèm */
+        #cert-pdf-template {
+            width: 842px; height: 595px; background: #fff; padding: 0; position: relative;
+            display: none; box-sizing: border-box; overflow: hidden;
+        }
+        .cert-outer-border {
+            position: absolute; inset: 20px; border: 2px solid #002244; padding: 5px;
+        }
+        .cert-inner-border {
+            border: 1px solid #C5A059; height: 100%; width: 100%; position: relative; padding: 40px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        /* Trang trí góc theo mẫu */
+        .corner-decor { position: absolute; width: 80px; height: 80px; border: 4px solid #002244; }
+        .top-left { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+        .top-right { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
+        .bottom-left { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
+        .bottom-right { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+
+        .line-input {
+            border-bottom: 1px solid #002244; display: inline-block; min-width: 300px;
+            padding: 0 10px; font-weight: 700; color: #002244;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- MÀN HÌNH ĐĂNG NHẬP -->
+    <div id="login-screen" class="max-w-md w-full bg-white p-10 rounded-lg shadow-2xl border-t-8 border-[#002244]">
+        <div class="text-center mb-8">
+            <h1 class="serif text-3xl mb-2">HỌC VIỆN TƯ PHÁP</h1>
+            <p class="text-[10px] tracking-[0.3em] text-gray-400 font-bold uppercase">Prompt Engineering Certificate</p>
+            <div class="w-16 h-1 bg-[#C5A059] mx-auto mt-4"></div>
+        </div>
+        <form id="login-form" class="space-y-5">
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Họ và tên học viên</label>
+                <input type="text" id="user-id" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded outline-none focus:border-gold">
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Đơn vị công tác</label>
+                <input type="text" id="user-dept" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded outline-none focus:border-gold">
+            </div>
+            <button type="submit" class="w-full btn-justice py-4 font-bold text-sm tracking-widest uppercase">Vào phòng sát hạch</button>
+        </form>
+        <button onclick="showLeaderboard()" class="w-full mt-6 text-[10px] font-bold text-gray-400 hover:text-blue-900 transition underline underline-offset-4">BẢNG VÀNG TOP 20</button>
+    </div>
+
+    <!-- MÀN HÌNH CÂU HỎI -->
+    <div id="quiz-screen" class="hidden max-w-2xl w-full bg-white p-10 rounded-lg shadow-2xl">
+        <div class="flex justify-between items-end mb-8 border-b pb-4">
+            <div>
+                <h3 id="question-number" class="text-gold font-bold text-[10px] tracking-widest uppercase mb-1"></h3>
+                <h2 id="question-text" class="serif text-xl leading-snug"></h2>
+            </div>
+        </div>
+        <div id="options-container" class="space-y-3 mb-8"></div>
+        <div id="explanation-box" class="hidden p-6 bg-gray-50 border-l-4 border-gold mb-8">
+            <p id="explanation-text" class="text-sm italic text-gray-600 leading-relaxed"></p>
+        </div>
+        <button id="next-btn" onclick="nextQuestion()" class="hidden w-full bg-[#002244] text-white py-4 rounded font-bold uppercase tracking-widest text-xs">Tiếp tục &rarr;</button>
+    </div>
+
+    <!-- MÀN HÌNH KẾT QUẢ -->
+    <div id="result-screen" class="hidden max-w-lg w-full bg-white p-10 rounded-lg shadow-2xl text-center border-b-8 border-[#C5A059]">
+        <h2 class="serif text-3xl mb-4">KẾT QUẢ SÁT HẠCH</h2>
+        <div class="py-10 bg-gray-50 rounded-lg mb-8">
+            <p class="text-[10px] text-gray-400 uppercase font-bold mb-2 tracking-widest">Điểm số đạt được</p>
+            <span id="res-score" class="text-6xl font-black text-[#002244]"></span>
+        </div>
+        <div class="space-y-4">
+            <button onclick="downloadCertificate()" class="w-full bg-[#002244] text-white py-4 rounded font-bold uppercase tracking-widest text-xs">Xuất chứng chỉ PDF</button>
+            <button onclick="location.reload()" class="w-full text-gray-400 text-[10px] font-bold uppercase tracking-widest hover:text-black">Thực hiện lại</button>
+        </div>
+    </div>
+
+    <!-- BẢNG XẾP HẠNG TOP 20 -->
+    <div id="leaderboard-overlay" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white max-w-xl w-full rounded-lg shadow-2xl overflow-hidden">
+            <div class="bg-[#002244] p-8 text-white flex justify-between items-center">
+                <h3 class="serif text-2xl">BẢNG VÀNG TOP 20</h3>
+                <button onclick="hideLeaderboard()" class="text-2xl opacity-50 hover:opacity-100">&times;</button>
+            </div>
+            <div class="p-8">
+                <div id="leaderboard-list" class="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto pr-2"></div>
+                <div class="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
+                    <button onclick="showReset()" class="text-[9px] font-bold text-gray-300 uppercase tracking-widest hover:text-red-500 transition">Reset Data</button>
+                    <div id="reset-auth" class="hidden flex gap-2">
+                        <input type="password" id="admin-pass" class="px-3 py-1 text-xs border rounded" placeholder="Mật khẩu">
+                        <button onclick="confirmReset()" class="bg-red-600 text-white px-3 py-1 text-[9px] font-bold rounded">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEMPLATE CHỨNG CHỈ (THIẾT KẾ THEO MẪU ẢNH) -->
+    <div id="cert-pdf-template">
+        <div class="cert-outer-border">
+            <div class="cert-inner-border">
+                <div class="corner-decor top-left"></div>
+                <div class="corner-decor top-right"></div>
+                <div class="corner-decor bottom-left"></div>
+                <div class="corner-decor bottom-right"></div>
+
+                <div style="text-align:center; margin-top: 20px;">
+                    <h1 style="font-family: 'Playfair Display', serif; font-size: 32px; color: #002244; margin: 0; letter-spacing: 5px;">CHỨNG NHẬN</h1>
+                    <h2 style="font-family: 'Playfair Display', serif; font-size: 20px; color: #002244; margin: 5px 0 0; font-weight: 400; letter-spacing: 2px;">HOÀN THÀNH KHÓA HỌC</h2>
+                </div>
+
+                <div style="margin: 23px 0; background: #FFD700; color: #002244; padding: 5px 25px; font-weight: 900; font-size: 14px; letter-spacing: 2px;">
+                    Trung tâm Chuyển đổi số và Thông tin - Thư viện
+                </div>
+
+                <div style="width: 100%; margin-top: 30px; font-size: 15px; line-height: 2.2; color: #333;">
+                    <div style="display: flex; align-items: flex-end; margin-bottom: 10px;">
+                        <span style="width: 80px;">Họ và tên:</span>
+                        <div class="line-input" id="pdf-name" style="flex: 1; font-size: 18px; text-transform: uppercase;"></div>
+                    </div>
+                    <div style="display: flex; align-items: flex-end; margin-bottom: 10px;">
+                        <span style="width: 80px;">Khóa học:</span>
+                        <div class="line-input" style="flex: 1;">AI và ứng dụng trong Học viện Tư Pháp: Kỹ thuật Prompting</div>
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <span style="width: 80px;">Ngày cấp:</span>
+                        <div class="line-input" id="pdf-date" style="flex: 1;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; text-align: center; max-width: 80%;">
+                    <p style="font-size: 14px; font-style: italic; color: #555;">
+                        Chứng nhận học viên đã hoàn thành bài sát hạch năng lực ứng dụng Trí tuệ nhân tạo (AI) với số điểm <span id="pdf-score" style="font-weight:bold; color:#002244"></span>.
+                    </p>
+                </div>
+
+                <!-- Chữ ký và dấu mộc -->
+                <div style="margin-top: auto; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 20px;">
+                    <div style="text-align: center; width: 200px;">
+                        <div style="height: 60px; display: flex; align-items: center; justify-content: center;">
+                             <img src="D:\OneDrive - vnu.edu.vn\FET_UET\AI and Application_HVTP\Tai lieu - Hoc lieu\Prompt template\certify.png" style="opacity: 0.5;">
+                        </div>
+                        <p style="font-size: 10px; font-weight: bold; border-top: 1px solid #002244; padding-top: 5px; margin-top: 5px;">HỌC VIỆN TƯ PHÁP</p>
+                        <p style="font-size: 9px; color: #666;">Mã định danh: CTBI58</p>
+                    </div>
+
+                    <div style="text-align: center; position: relative;">
+                         <!-- Giả lập con dấu tròn -->
+                         <div style="width: 80px; height: 80px; border: 2px solid rgba(220, 38, 38, 0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: rgba(220, 38, 38, 0.4); font-size: 8px; font-weight: bold; transform: rotate(-15deg); margin-bottom: 10px;">
+                            HỌC VIỆN<br>TƯ PHÁP
+                         </div>
+                    </div>
+
+                    <div style="text-align: center; width: 200px;">
+                        <div style="height: 60px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
+                             <span class="cursive" style="font-size: 20px; color: #002244;">AI-EDU CENTER</span>
+                        </div>
+                        <p style="font-size: 10px; font-weight: bold; border-top: 1px solid #002244; padding-top: 5px;">HỘI ĐỒNG GIẢNG VIÊN</p>
+                        <p style="font-size: 9px; color: #666;">Chuyên gia Đào tạo</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_PW = "giangvienAI2026";
+        const questionBank = [
+            { q: "Hiện tượng 'ảo giác' (Hallucinations) trong AI xảy ra khi nào?", a: ["AI bị mất kết nối Internet", "AI tạo ra thông tin sai lệch nhưng trình bày thuyết phục", "AI phản hồi quá chậm", "AI yêu cầu người dùng trả tiền"], c: "AI tạo ra thông tin sai lệch nhưng trình bày thuyết phục", e: "Ảo giác xảy ra do AI dự đoán mẫu ngôn ngữ thay vì thực hiện phép toán logic hoặc truy xuất dữ liệu thực tế." },
+            { q: "Đối với trích dẫn điều luật, bạn nên thiết lập Temperature ở mức nào?", a: ["Temperature = 1.0 (Sáng tạo nhất)", "Temperature = 0.5 (Cân bằng)", "Temperature = 0 (Chính xác tuyệt đối)", "Không quan trọng"], c: "Temperature = 0 (Chính xác tuyệt đối)", e: "Nhiệt độ bằng 0 giúp mô hình 'tỉnh táo', luôn chọn từ có xác suất cao nhất, giảm thiểu sự ngẫu nhiên." },
+            { q: "Yếu tố 'E' trong khung TCREI đại diện cho kỹ thuật nào?", a: ["Emailing (Gửi thư)", "Evaluation (Đánh giá)", "Examples (Few-shot Prompting)", "Editing (Chỉnh sửa)"], c: "Examples (Few-shot Prompting)", e: "Đưa ra 3-5 ví dụ mẫu giúp AI hiểu rõ mẫu hình (pattern) bạn mong muốn và giảm thiểu đoán mò." },
+            { q: "Kỹ thuật 'Chain of Thought' thường dùng cụm từ nào để kích hoạt?", a: ["Hãy làm nhanh lên", "Hãy suy nghĩ từng bước một", "Đừng nói dối tôi", "Dịch sang tiếng Anh"], c: "Hãy suy nghĩ từng bước một", e: "Buộc AI trình bày các bước lập luận trung gian, giúp người dùng dễ phát hiện lỗi logic." },
+            { q: "Trong khung TCREI, 'I' (Iterate) có nghĩa là gì?", a: ["Lập tức tin tưởng AI", "Lặp lại và điều chỉnh câu lệnh", "In ấn kết quả", "Internet là bắt buộc"], c: "Lặp lại và điều chỉnh câu lệnh", e: "Prompting là một hành trình tương tác, cần điều chỉnh liên tục để đạt kết quả tối ưu." },
+            { q: "Kỹ thuật 'Few-shot' giúp AI học điều gì ngay trong Prompt?", a: ["Mật khẩu của bạn", "Tông giọng, phong cách và cấu trúc dữ liệu", "Cách tìm kiếm Google", "Cách hack vào hệ thống"], c: "Tông giọng, phong cách và cấu trúc dữ liệu", e: "Few-shot giúp AI học nhanh qua các ví dụ mà không cần đào tạo lại mô hình." },
+            { q: "Dấu phân cách (Delimiter) như ### hoặc \"\"\" giúp ích gì?", a: ["Làm đẹp giao diện", "Phân biệt rõ đâu là lệnh, đâu là dữ liệu nguồn", "Tăng dung lượng file", "Kết thúc cuộc trò chuyện"], c: "Phân biệt rõ đâu là lệnh, đâu là dữ liệu nguồn", e: "Giúp AI không bị nhầm lẫn giữa hướng dẫn của người dùng và nội dung cần xử lý." },
+            { q: "Kỹ thuật 'Step-back' (Lùi lại một bước) khuyên chúng ta làm gì?", a: ["Ngừng sử dụng AI", "Xác định các nguyên lý chung trước khi giải quyết vấn đề cụ thể", "Hỏi lại câu hỏi cũ", "Xóa bớt câu lệnh"], c: "Xác định các nguyên lý chung trước khi giải quyết vấn đề cụ thể", e: "Giúp AI có nền tảng kiến thức tổng quát trước khi đi vào chi tiết tranh chấp." },
+            { q: "Khi AI lan man hoặc lặp từ vô nghĩa, bạn nên xử lý thế nào?", a: ["Mắng AI", "Kiểm tra Temperature hoặc chia nhỏ câu lệnh", "Tắt máy tính", "Đợi 1 tiếng sau quay lại"], c: "Kiểm tra Temperature hoặc chia nhỏ câu lệnh", e: "Nhiệm vụ quá phức tạp hoặc Temperature quá cao dễ khiến AI bị 'quá tải' và lan man." },
+            { q: "Tư duy 'Human in the loop' nghĩa là gì?", a: ["Con người không cần làm gì", "Con người là lớp phòng thủ cuối cùng kiểm chứng kết quả", "AI thay thế hoàn toàn con người", "Con người phải học code"], c: "Con người là lớp phòng thủ cuối cùng kiểm chứng kết quả", e: "Trong ngành Tư pháp, con người luôn chịu trách nhiệm cuối cùng cho mọi quyết định dựa trên AI." }
+        ];
+
+        let selectedQuestions = [];
+        let currentIdx = 0;
+        let score = 0;
+        let user = { name: '', dept: '' };
+
+        document.getElementById('login-form').onsubmit = function(e) {
+            e.preventDefault();
+            user.name = document.getElementById('user-id').value;
+            user.dept = document.getElementById('user-dept').value;
+            selectedQuestions = [...questionBank].sort(() => 0.5 - Math.random()).slice(0, 10);
+            currentIdx = 0; score = 0;
+            showScreen('quiz-screen');
+            loadQuestion();
+        };
+
+        function loadQuestion() {
+            const data = selectedQuestions[currentIdx];
+            document.getElementById('question-number').innerText = `Câu hỏi ${currentIdx + 1}/10`;
+            document.getElementById('question-text').innerText = data.q;
+            document.getElementById('explanation-box').classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            // Shuffling options
+            const options = [...data.a].sort(() => 0.5 - Math.random());
+            
+            options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 border-2 border-gray-100 rounded hover:border-gold transition flex items-center gap-4 group";
+                btn.innerHTML = `<span class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center font-bold text-xs group-hover:bg-gold group-hover:text-white transition">${String.fromCharCode(65 + idx)}</span><span class="text-sm font-medium text-gray-700">${opt}</span>`;
+                btn.onclick = () => checkAnswer(opt, data.c, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, correct, btn) {
+            if (!document.getElementById('next-btn').classList.contains('hidden')) return;
+            const btns = document.querySelectorAll('#options-container button');
+            btns.forEach(b => {
+                const txt = b.querySelector('span:last-child').innerText;
+                if (txt === correct) b.classList.add('correct-opt');
+                if (txt === selected && selected !== correct) b.classList.add('wrong-opt');
+                b.disabled = true;
+            });
+            if (selected === correct) score++;
+            document.getElementById('explanation-text').innerText = selectedQuestions[currentIdx].e;
+            document.getElementById('explanation-box').classList.remove('hidden');
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentIdx++;
+            if (currentIdx < 10) loadQuestion();
+            else finish();
+        }
+
+        function finish() {
+            document.getElementById('res-score').innerText = `${score}/10`;
+            saveScore(user.name, user.dept, score);
+            showScreen('result-screen');
+        }
+
+        function saveScore(name, dept, s) {
+            let lb = JSON.parse(localStorage.getItem('justice_lb_v2') || '[]');
+            lb.push({ name, dept, score: s, date: new Date().getTime() });
+            lb.sort((a,b) => b.score - a.score);
+            localStorage.setItem('justice_lb_v2', JSON.stringify(lb.slice(0, 20)));
+        }
+
+        function showLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            let lb = JSON.parse(localStorage.getItem('justice_lb_v2') || '[]');
+            list.innerHTML = lb.length ? lb.map((item, idx) => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded border-l-4 ${idx < 3 ? 'border-gold' : 'border-gray-200'}">
+                    <div class="flex items-center gap-4">
+                        <span class="font-black text-gray-300">#${idx + 1}</span>
+                        <div><p class="font-bold text-sm text-[#002244]">${item.name}</p><p class="text-[9px] uppercase text-gray-400 font-bold">${item.dept}</p></div>
+                    </div>
+                    <span class="font-black text-[#002244]">${item.score}/10</span>
+                </div>
+            `).join('') : '<p class="text-center py-10 text-gray-400 italic">Chưa có dữ liệu.</p>';
+            document.getElementById('leaderboard-overlay').classList.remove('hidden');
+        }
+
+        function downloadCertificate() {
+            document.getElementById('pdf-name').innerText = user.name;
+            document.getElementById('pdf-date').innerText = new Date().toLocaleDateString('vi-VN');
+            document.getElementById('pdf-score').innerText = `${score}/10`;
+            
+            const element = document.getElementById('cert-pdf-template');
+            element.style.display = 'block';
+            
+            const opt = {
+                margin: 0,
+                filename: `ChungNhan_AI_${user.name.replace(/\s+/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 3, useCORS: true },
+                jsPDF: { unit: 'px', format: [842, 595], orientation: 'landscape' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.style.display = 'none';
+            });
+        }
+
+        function showReset() { document.getElementById('reset-auth').classList.remove('hidden'); }
+        function confirmReset() {
+            if (document.getElementById('admin-pass').value === ADMIN_PW) {
+                localStorage.removeItem('justice_lb_v2');
+                showLeaderboard();
+                document.getElementById('reset-auth').classList.add('hidden');
+            } else alert("Sai mật khẩu");
+        }
+        function hideLeaderboard() { document.getElementById('leaderboard-overlay').classList.add('hidden'); }
+        function showScreen(id) {
+            ['login-screen', 'quiz-screen', 'result-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
