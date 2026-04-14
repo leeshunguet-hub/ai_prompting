@@ -303,13 +303,12 @@
         let currentIdx = 0;
         let score = 0;
         let user = { name: '', dept: '' };
-        let num_question = 30;
         
         document.getElementById('login-form').onsubmit = function(e) {
             e.preventDefault();
             user.name = document.getElementById('user-id').value;
             user.dept = document.getElementById('user-dept').value;
-            selectedQuestions = [...questionBank].sort(() => 0.5 - Math.random()).slice(0, num_question);
+            selectedQuestions = [...questionBank].sort(() => 0.5 - Math.random()).slice(0, 30);
             currentIdx = 0; score = 0;
             showScreen('quiz-screen');
             loadQuestion();
@@ -317,7 +316,7 @@
 
         function loadQuestion() {
             const data = selectedQuestions[currentIdx];
-            document.getElementById('question-number').innerText = `Câu hỏi ${currentIdx + 1}/num_question`;
+            document.getElementById('question-number').innerText = `Câu hỏi ${currentIdx + 1}/30`;
             document.getElementById('question-text').innerText = data.q;
             document.getElementById('explanation-box').classList.add('hidden');
             document.getElementById('next-btn').classList.add('hidden');
@@ -359,7 +358,7 @@
         }
 
         function finish() {
-            document.getElementById('res-score').innerText = `${score}/num_question`;
+            document.getElementById('res-score').innerText = `${score}/30`;
             saveScore(user.name, user.dept, score);
             showScreen('result-screen');
         }
@@ -374,13 +373,13 @@
         function showLeaderboard() {
             const list = document.getElementById('leaderboard-list');
             let lb = JSON.parse(localStorage.getItem('justice_lb_v2') || '[]');
-            list.innerHTML = lb.length ? lb.map((item, idx) => `
+            list.innerHTML = lb.length? lb.map((item, idx) => `
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded border-l-4 ${idx < 3 ? 'border-gold' : 'border-gray-200'}">
                     <div class="flex items-center gap-4">
                         <span class="font-black text-gray-300">#${idx + 1}</span>
                         <div><p class="font-bold text-sm text-[#002244]">${item.name}</p><p class="text-[9px] uppercase text-gray-400 font-bold">${item.dept}</p></div>
                     </div>
-                    <span class="font-black text-[#002244]">${item.score}/10</span>
+                    <span class="font-black text-[#002244]">${item.score}/30</span>
                 </div>
             `).join('') : '<p class="text-center py-10 text-gray-400 italic">Chưa có dữ liệu.</p>';
             document.getElementById('leaderboard-overlay').classList.remove('hidden');
@@ -389,7 +388,7 @@
         function downloadCertificate() {
             document.getElementById('pdf-name').innerText = user.name;
             document.getElementById('pdf-date').innerText = new Date().toLocaleDateString('vi-VN');
-            document.getElementById('pdf-score').innerText = `${score}/num_question`;
+            document.getElementById('pdf-score').innerText = `${score}/30`;
             
             const element = document.getElementById('cert-pdf-template');
             element.style.display = 'block';
