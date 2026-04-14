@@ -303,12 +303,13 @@
         let currentIdx = 0;
         let score = 0;
         let user = { name: '', dept: '' };
-
+        let num_question = 30;
+        
         document.getElementById('login-form').onsubmit = function(e) {
             e.preventDefault();
             user.name = document.getElementById('user-id').value;
             user.dept = document.getElementById('user-dept').value;
-            selectedQuestions = [...questionBank].sort(() => 0.5 - Math.random()).slice(0, 30);
+            selectedQuestions = [...questionBank].sort(() => 0.5 - Math.random()).slice(0, num_question);
             currentIdx = 0; score = 0;
             showScreen('quiz-screen');
             loadQuestion();
@@ -316,7 +317,7 @@
 
         function loadQuestion() {
             const data = selectedQuestions[currentIdx];
-            document.getElementById('question-number').innerText = `Câu hỏi ${currentIdx + 1}/30`;
+            document.getElementById('question-number').innerText = `Câu hỏi ${currentIdx + 1}/num_question`;
             document.getElementById('question-text').innerText = data.q;
             document.getElementById('explanation-box').classList.add('hidden');
             document.getElementById('next-btn').classList.add('hidden');
@@ -353,7 +354,7 @@
 
         function nextQuestion() {
             currentIdx++;
-            if (currentIdx < 10) loadQuestion();
+            if (currentIdx < num_question) loadQuestion();
             else finish();
         }
 
