@@ -8,10 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root {
-            --primary: #002244;
-            --gold: #C5A059;
-        }
+        :root { --primary: #002244; --gold: #C5A059; }
         body { font-family: 'Inter', sans-serif; background: #f4f6f9; color: var(--primary); }
         .serif { font-family: 'Playfair Display', serif; }
         .cursive { font-family: 'Dancing Script', cursive; }
@@ -19,30 +16,19 @@
         .btn-justice:hover { background: #003366; transform: translateY(-1px); }
         .correct-opt { border-color: #059669 !important; background-color: #f0fdf4 !important; }
         .wrong-opt { border-color: #dc2626 !important; background-color: #fef2f2 !important; }
-        
-        /* Layout PDF - Theo mẫu ảnh đính kèm */
-        #cert-pdf-template {
-            width: 842px; height: 595px; background: #fff; padding: 0; position: relative;
-            display: none; box-sizing: border-box; overflow: hidden;
-        }
-        .cert-outer-border {
-            position: absolute; inset: 20px; border: 2px solid #002244; padding: 5px;
-        }
-        .cert-inner-border {
-            border: 1px solid #C5A059; height: 100%; width: 100%; position: relative; padding: 40px;
-            display: flex; flex-direction: column; align-items: center;
-        }
-        /* Trang trí góc theo mẫu */
-        .corner-decor { position: absolute; width: 80px; height: 80px; border: 4px solid #002244; }
-        .top-left { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
-        .top-right { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
-        .bottom-left { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
-        .bottom-right { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+	/* Ẩn các template xuất PDF khi không sử dụng */
+	#cert-pdf-template, #detailed-report-template {display: none;}
 
-        .line-input {
-            border-bottom: 1px solid #002244; display: inline-block; min-width: 300px;
-            padding: 0 10px; font-weight: 700; color: #002244;
-        }
+        .quiz-header { background: linear-gradient(90deg, #002244, #003366); color: white; border-radius: 12px; padding: 12px 20px; box-shadow: 0 10px 15px -3px rgb(0 34 68 / 0.2); }
+        .progress-bar { height: 8px; background: #e5e7eb; border-radius: 9999px; overflow: hidden; margin-top: 6px; }
+        .progress-fill { height: 100%; background: linear-gradient(to right, #C5A059, #002244); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .timer-digit { font-variant-numeric: tabular-nums; }
+        .music-btn { transition: all 0.3s; }
+        .music-btn:hover { transform: scale(1.15); }
+
+        #admin-dashboard { display: none; }
+        .admin-table td, .admin-table th { border: 1px solid #e5e7eb; padding: 12px; }
+        .admin-table th { background: #002244; color: white; }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
@@ -65,11 +51,35 @@
             </div>
             <button type="submit" class="w-full btn-justice py-4 font-bold text-sm tracking-widest uppercase">Vào Bài Kiểm Tra</button>
         </form>
-        <button onclick="showLeaderboard()" class="w-full mt-6 text-[10px] font-bold text-gray-400 hover:text-blue-900 transition underline underline-offset-4">BẢNG XẾP HẠNG TOP 20</button>
+
+        <!-- NÚT QUẢN TRỊ VIÊN MỚI -->
+        <button onclick="enterAdminMode()" 
+                class="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded font-bold text-sm tracking-widest uppercase flex items-center justify-center gap-2">
+            <span>🔐</span> CHẾ ĐỘ QUẢN TRỊ VIÊN
+        </button>
+
+        <button onclick="showLeaderboard()" class="w-full mt-4 text-[10px] font-bold text-gray-400 hover:text-blue-900 transition underline underline-offset-4">BẢNG XẾP HẠNG TOP 20</button>
     </div>
 
-    <!-- MÀN HÌNH CÂU HỎI -->
+    <!-- MÀN HÌNH QUIZ (giữ nguyên như phiên bản trước) -->
     <div id="quiz-screen" class="hidden max-w-2xl w-full bg-white p-10 rounded-lg shadow-2xl">
+        <div class="quiz-header mb-6">
+            <div class="flex items-center justify-between text-sm font-semibold">
+                <div class="flex items-center gap-x-3">
+                    <span class="uppercase tracking-widest">Tiến trình</span>
+                    <span id="progress-text" class="text-[#C5A059] text-lg font-bold">1/20</span>
+                </div>
+                <div class="flex items-center gap-x-4">
+                    <div class="flex items-center gap-x-2 bg-white/10 backdrop-blur-md px-4 py-1 rounded-2xl">
+                        <span class="text-xs uppercase tracking-widest opacity-75">Thời gian</span>
+                        <span id="timer-display" class="timer-digit text-2xl font-semibold text-white">00:00</span>
+                    </div>
+                    <button onclick="toggleMusic()" id="music-btn" class="music-btn w-9 h-9 bg-white/10 hover:bg-white/20 text-white rounded-2xl flex items-center justify-center text-2xl">♪</button>
+                </div>
+            </div>
+            <div class="progress-bar mt-3"><div id="progress-fill" class="progress-fill" style="width: 5%"></div></div>
+        </div>
+
         <div class="flex justify-between items-end mb-8 border-b pb-4">
             <div>
                 <h3 id="question-number" class="text-gold font-bold text-[10px] tracking-widest uppercase mb-1"></h3>
@@ -83,40 +93,64 @@
         <button id="next-btn" onclick="nextQuestion()" class="hidden w-full bg-[#002244] text-white py-4 rounded font-bold uppercase tracking-widest text-xs">Tiếp tục &rarr;</button>
     </div>
 
-    <!-- MÀN HÌNH KẾT QUẢ -->
+    <!-- MÀN HÌNH KẾT QUẢ (giữ nguyên) -->
     <div id="result-screen" class="hidden max-w-lg w-full bg-white p-10 rounded-lg shadow-2xl text-center border-b-8 border-[#C5A059]">
         <h2 class="serif text-3xl mb-4">KẾT QUẢ SÁT HẠCH</h2>
         <div class="py-10 bg-gray-50 rounded-lg mb-8">
             <p class="text-[10px] text-gray-400 uppercase font-bold mb-2 tracking-widest">Điểm số đạt được</p>
             <span id="res-score" class="text-6xl font-black text-[#002244]"></span>
+            <div class="mt-6 flex items-center justify-center gap-2 text-sm">
+                <span class="text-gray-500">Thời gian hoàn thành:</span>
+                <span id="res-time" class="font-bold text-[#002244] text-xl font-mono"></span>
+            </div>
         </div>
         <div class="space-y-4">
             <button onclick="downloadCertificate()" class="w-full bg-[#002244] text-white py-4 rounded font-bold uppercase tracking-widest text-xs">Xuất chứng chỉ PDF</button>
+            <button onclick="downloadDetailedReport()" class="w-full bg-[#C5A059] text-[#002244] py-4 rounded font-bold uppercase tracking-widest text-xs">TẢI BÁO CÁO CHI TIẾT (PDF)</button>
             <button onclick="location.reload()" class="w-full text-gray-400 text-[10px] font-bold uppercase tracking-widest hover:text-black">Thực hiện lại</button>
         </div>
     </div>
 
-    <!-- BẢNG XẾP HẠNG TOP 20 -->
-    <div id="leaderboard-overlay" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white max-w-xl w-full rounded-lg shadow-2xl overflow-hidden">
-            <div class="bg-[#002244] p-8 text-white flex justify-between items-center">
-                <h3 class="serif text-2xl">BẢNG VÀNG TOP 20</h3>
-                <button onclick="hideLeaderboard()" class="text-2xl opacity-50 hover:opacity-100">&times;</button>
-            </div>
-            <div class="p-8">
-                <div id="leaderboard-list" class="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto pr-2"></div>
-                <div class="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
-                    <button onclick="showReset()" class="text-[9px] font-bold text-gray-300 uppercase tracking-widest hover:text-red-500 transition">Reset Data</button>
-                    <div id="reset-auth" class="hidden flex gap-2">
-                        <input type="password" id="admin-pass" class="px-3 py-1 text-xs border rounded" placeholder="Mật khẩu">
-                        <button onclick="confirmReset()" class="bg-red-600 text-white px-3 py-1 text-[9px] font-bold rounded">OK</button>
-                    </div>
+    <!-- ADMIN DASHBOARD - GIÁM SÁT THỜI GIAN THỰC -->
+    <div id="admin-overlay" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+        <div class="bg-white w-full max-w-6xl rounded-2xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col">
+            <div class="bg-[#002244] px-8 py-5 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📡</span>
+                    <h3 class="serif text-3xl">GIÁM SÁT THỜI GIAN THỰC - TẤT CẢ HỌC VIÊN</h3>
                 </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="refreshAdminDashboard()" class="px-5 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-bold flex items-center gap-2">
+                        <span>↻</span> LÀM MỚI
+                    </button>
+                    <button onclick="exportAllResultsHTML()" class="px-5 py-2 bg-[#C5A059] text-[#002244] rounded-xl text-sm font-bold flex items-center gap-2">
+                        📤 TẢI HTML BÁO CÁO TOÀN BỘ (GitHub)
+                    </button>
+                    <button onclick="hideAdminDashboard()" class="text-4xl leading-none hover:text-red-400">&times;</button>
+                </div>
+            </div>
+            <div class="p-8 flex-1 overflow-auto">
+                <table class="admin-table w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th class="text-center">STT</th>
+                            <th>Họ và tên</th>
+                            <th>Đơn vị</th>
+                            <th class="text-center">Điểm</th>
+                            <th class="text-center">Thời gian</th>
+                            <th class="text-center">Ngày giờ hoàn thành</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body" class="text-gray-700"></tbody>
+                </table>
+            </div>
+            <div class="px-8 py-4 border-t text-xs text-gray-400 text-center">
+                Dữ liệu được lưu trong trình duyệt • Tự động làm mới mỗi 5 giây • Để lưu vĩnh viễn lên GitHub, hãy tải file HTML báo cáo toàn bộ
             </div>
         </div>
     </div>
 
-    <!-- TEMPLATE CHỨNG CHỈ (THIẾT KẾ THEO MẪU ẢNH) -->
+     <!-- TEMPLATE CHỨNG CHỈ (GỐC) -->
     <div id="cert-pdf-template">
         <div class="cert-outer-border">
             <div class="cert-inner-border">
@@ -184,10 +218,61 @@
         </div>
     </div>
 
+    <!-- TEMPLATE BÁO CÁO CHI TIẾT (MỚI - TRỰC QUAN) -->
+    <div id="detailed-report-template">
+        <div style="max-width: 100%; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #C5A059; padding-bottom: 20px;">
+                <h1 style="font-size: 32px; color: #002244; letter-spacing: 3px; margin: 0;">BÁO CÁO KẾT QUẢ CHI TIẾT</h1>
+                <p style="color: #C5A059; font-size: 18px; margin-top: 8px;">Sát hạch Prompt Engineering • Học viện Tư Pháp</p>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 12px;">
+                <div>
+                    <div><strong>Họ và tên:</strong> <span id="report-name" class="text-xl uppercase"></span></div>
+                    <div class="mt-1"><strong>Đơn vị:</strong> <span id="report-dept"></span></div>
+                </div>
+                <div class="text-right">
+                    <div class="flex items-baseline justify-end gap-3">
+                        <span class="text-sm text-gray-500">ĐIỂM SỐ</span>
+                        <span id="report-score" class="text-5xl font-black text-[#002244]"></span>
+                        <span class="text-2xl text-gray-400">/20</span>
+                    </div>
+                    <div class="mt-2 flex items-center justify-end gap-2 text-sm">
+                        <span class="text-gray-500">Thời gian hoàn thành:</span>
+                        <span id="report-time" class="font-mono font-bold text-lg"></span>
+                    </div>
+                    <div id="report-date" class="text-xs text-gray-400 mt-1"></div>
+                </div>
+            </div>
+
+            <table class="report-table w-full text-sm" style="border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="width: 8%; text-align: center;">Câu</th>
+                        <th style="text-align: left;">Câu hỏi</th>
+                        <th style="width: 28%; text-align: left;">Trả lời của bạn</th>
+                        <th style="width: 12%; text-align: center;">Kết quả</th>
+                    </tr>
+                </thead>
+                <tbody id="report-body" style="font-size: 13px;"></tbody>
+            </table>
+
+            <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666; border-top: 1px dashed #ccc; padding-top: 20px;">
+                Báo cáo được tạo tự động lúc <span id="report-datetime"></span> • Dữ liệu chỉ lưu cục bộ trên trình duyệt của bạn
+            </div>
+        </div>
+    </div>
+
+    <!-- NHẠC NỀN (Royalty-free motivational track - có thể thay src bằng file MP3 của bạn) -->
+    <audio id="bg-music" loop preload="none">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3" type="audio/mpeg">
+        <!-- Nếu muốn thay nhạc khác, thay link trên bằng link MP3 công khai (hoặc base64) -->
+    </audio>
+
+
     <script>
         const ADMIN_PW = "giangvienAI2026";
-        const questionBank = [
-            { q: "Hiện tượng 'ảo giác' (Hallucinations) trong AI xảy ra khi nào?", a: ["AI bị mất kết nối Internet", "AI tạo ra thông tin sai lệch nhưng trình bày thuyết phục", "AI phản hồi quá chậm", "AI yêu cầu người dùng trả tiền"], c: "AI tạo ra thông tin sai lệch nhưng trình bày thuyết phục", e: "Ảo giác xảy ra do AI dự đoán mẫu ngôn ngữ thay vì thực hiện phép toán logic hoặc truy xuất dữ liệu thực tế." },
+        const questionBank = [  { q: "Hiện tượng 'ảo giác' (Hallucinations) trong AI xảy ra khi nào?", a: ["AI bị mất kết nối Internet", "AI tạo ra thông tin sai lệch nhưng trình bày thuyết phục", "AI phản hồi quá chậm", "AI yêu cầu người dùng trả tiền"], c: "AI tạo ra thông tin sai lệch nhưng trình bày thuyết phục", e: "Ảo giác xảy ra do AI dự đoán mẫu ngôn ngữ thay vì thực hiện phép toán logic hoặc truy xuất dữ liệu thực tế." },
             { q: "Đối với trích dẫn điều luật, bạn nên thiết lập Temperature ở mức nào?", a: ["Temperature = 1.0 (Sáng tạo nhất)", "Temperature = 0.5 (Cân bằng)", "Temperature = 0 (Chính xác tuyệt đối)", "Không quan trọng"], c: "Temperature = 0 (Chính xác tuyệt đối)", e: "Nhiệt độ bằng 0 giúp mô hình 'tỉnh táo', luôn chọn từ có xác suất cao nhất, giảm thiểu sự ngẫu nhiên." },
             { q: "Yếu tố 'E' trong khung TCREI đại diện cho kỹ thuật nào?", a: ["Emailing (Gửi thư)", "Evaluation (Đánh giá)", "Examples (Few-shot Prompting)", "Editing (Chỉnh sửa)"], c: "Examples (Few-shot Prompting)", e: "Đưa ra 3-5 ví dụ mẫu giúp AI hiểu rõ mẫu hình (pattern) bạn mong muốn và giảm thiểu đoán mò." },
             { q: "Kỹ thuật 'Chain of Thought' thường dùng cụm từ nào để kích hoạt?", a: ["Hãy làm nhanh lên", "Hãy suy nghĩ từng bước một", "Đừng nói dối tôi", "Dịch sang tiếng Anh"], c: "Hãy suy nghĩ từng bước một", e: "Buộc AI trình bày các bước lập luận trung gian, giúp người dùng dễ phát hiện lỗi logic." },
@@ -297,36 +382,183 @@
             {q: "Trong quản lý nhân sự, AI có thể giúp gì cho việc tuyển dụng?",a: ["Tự động loại bỏ ứng viên mà không cần lý do", "Sàng lọc CV dựa trên từ khóa và tiêu chuẩn công việc, giúp tiết kiệm thời gian cho HR", "Thay thế hoàn toàn buổi phỏng vấn trực tiếp", "Hỏi những câu hỏi riêng tư của ứng viên"],c: "Sàng lọc CV dựa trên từ khóa và tiêu chuẩn công việc, giúp tiết kiệm thời gian cho HR",e: "AI hỗ trợ HR tập trung vào các ứng viên tiềm năng nhất thay vì phải đọc thủ công hàng nghìn hồ sơ."},
             {q: "Kỹ thuật 'Zero-shot Prompting' là gì?",a: ["Đưa ra rất nhiều ví dụ", "Yêu cầu AI thực hiện nhiệm vụ mà không cung cấp bất kỳ ví dụ mẫu nào", "Không viết gì vào ô chat", "Tắt AI ngay lập tức"],c: "Yêu cầu AI thực hiện nhiệm vụ mà không cung cấp bất kỳ ví dụ mẫu nào",e: "Zero-shot dựa hoàn toàn vào kiến thức sẵn có của mô hình AI để xử lý yêu cầu."},
             {q: "Một prompt tốt nên tránh điều gì?",a: ["Tránh viết quá rõ ràng", "Tránh sử dụng các từ ngữ mơ hồ, chung chung (vd: 'Làm nó tốt hơn')", "Tránh sử dụng tiếng Việt", "Tránh sử dụng dấu phẩy"],c: "Tránh sử dụng các từ ngữ mơ hồ, chung chung (vd: 'Làm nó tốt hơn')",e: "Sự mơ hồ là kẻ thù của hiệu suất AI. Càng cụ thể, kết quả càng tốt."}
-    ];
+    
+        ];
 
-        let selectedQuestions = [];
-        let currentIdx = 0;
-        let score = 0;
+        let selectedQuestions = [], currentIdx = 0, score = 0;
         let user = { name: '', dept: '' };
-        
+        let startTime = 0, timerInterval = null, timeTaken = 0;
+        let userResponses = [];
+
+        // ==================== ADMIN STORAGE ====================
+        function saveFullAttempt() {
+            let attempts = JSON.parse(localStorage.getItem('justice_attempts_v2') || '[]');
+            attempts.push({
+                id: Date.now(),
+                name: user.name,
+                dept: user.dept,
+                score: score,
+                time: timeTaken,
+                date: Date.now(),
+                responses: userResponses
+            });
+            localStorage.setItem('justice_attempts_v2', JSON.stringify(attempts));
+        }
+
+        // ==================== ADMIN DASHBOARD ====================
+        function enterAdminMode() {
+            const pw = prompt("🔐 Nhập mật khẩu Quản trị viên:");
+            if (pw === ADMIN_PW) {
+                document.getElementById('admin-overlay').classList.remove('hidden');
+                refreshAdminDashboard();
+                // Tự động refresh mỗi 5 giây
+                window.adminRefreshInterval = setInterval(refreshAdminDashboard, 5000);
+            } else {
+                alert("❌ Mật khẩu sai!");
+            }
+        }
+
+        function hideAdminDashboard() {
+            document.getElementById('admin-overlay').classList.add('hidden');
+            clearInterval(window.adminRefreshInterval);
+        }
+
+        function refreshAdminDashboard() {
+            const tbody = document.getElementById('admin-table-body');
+            let attempts = JSON.parse(localStorage.getItem('justice_attempts_v2') || '[]');
+            
+            attempts.sort((a,b) => b.date - a.date); // mới nhất trước
+
+            tbody.innerHTML = attempts.length ? attempts.map((a, i) => `
+                <tr>
+                    <td class="text-center font-bold">${i+1}</td>
+                    <td class="font-semibold">${a.name}</td>
+                    <td>${a.dept}</td>
+                    <td class="text-center font-black text-xl text-[#002244]">${a.score}/20</td>
+                    <td class="text-center font-mono">${Math.floor(a.time/60000)}:${(Math.floor(a.time/1000)%60).toString().padStart(2,'0')}</td>
+                    <td class="text-center text-xs">${new Date(a.date).toLocaleString('vi-VN')}</td>
+                </tr>
+            `).join('') : `<tr><td colspan="6" class="text-center py-12 text-gray-400">Chưa có học viên nào hoàn thành bài kiểm tra.</td></tr>`;
+        }
+
+        // ==================== EXPORT HTML CHO GITHUB ====================
+        function exportAllResultsHTML() {
+            let attempts = JSON.parse(localStorage.getItem('justice_attempts_v2') || '[]');
+            if (!attempts.length) {
+                alert("Chưa có dữ liệu nào để xuất!");
+                return;
+            }
+
+            let htmlContent = `
+<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><title>BÁO CÁO TOÀN BỘ - Sát hạch Prompt Engineering</title>
+<style>body{font-family:Arial,sans-serif;background:#f4f6f9;padding:30px;color:#002244;}table{width:100%;border-collapse:collapse;margin:20px 0;}th,td{border:1px solid #ccc;padding:12px;text-align:left;}th{background:#002244;color:white;}</style>
+</head>
+<body>
+<h1 style="text-align:center;color:#002244;font-size:28px;">📊 BÁO CÁO KẾT QUẢ TOÀN BỘ</h1>
+<p style="text-align:center;color:#C5A059;">Học viện Tư Pháp • ${new Date().toLocaleDateString('vi-VN')}</p>
+`;
+
+            attempts.forEach((a, idx) => {
+                htmlContent += `
+<h2 style="margin-top:40px;border-bottom:3px solid #C5A059;padding-bottom:8px;">${idx+1}. ${a.name} - ${a.dept}</h2>
+<p><strong>Điểm:</strong> ${a.score}/20 &nbsp;&nbsp; <strong>Thời gian:</strong> ${Math.floor(a.time/60000)} phút ${Math.floor(a.time/1000)%60} giây</p>
+<table>
+<thead><tr><th>Câu</th><th>Câu hỏi</th><th>Trả lời</th><th>Kết quả</th></tr></thead>
+<tbody>`;
+                a.responses.forEach((r, i) => {
+                    htmlContent += `<tr>
+                        <td>${i+1}</td>
+                        <td>${r.q}</td>
+                        <td>${r.selected}</td>
+                        <td style="color:${r.isCorrect?'#059669':'#dc2626'}">${r.isCorrect?'✓ ĐÚNG':'✗ SAI'}</td>
+                    </tr>`;
+                });
+                htmlContent += `</tbody></table>`;
+            });
+
+            htmlContent += `<p style="text-align:center;margin-top:50px;color:#666;font-size:12px;">File được xuất tự động từ hệ thống sát hạch • Dữ liệu lưu trên GitHub</p></body></html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BaoCao_ToanBo_Quiz_${new Date().toISOString().slice(0,10)}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert("✅ Đã tải file HTML báo cáo toàn bộ!\nBạn có thể upload file này lên GitHub ngay.");
+        }
+
+        // ==================== CÁC HÀM QUIZ (giữ nguyên logic cũ + saveFullAttempt) ====================
+// ==================== CÁC HÀM MỚI ====================
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimer() {
+            if (!startTime) return;
+            const elapsed = Date.now() - startTime;
+            document.getElementById('timer-display').textContent = formatTime(elapsed);
+        }
+
+        function toggleMusic() {
+            const music = document.getElementById('bg-music');
+            const btn = document.getElementById('music-btn');
+            if (music.paused) {
+                music.play().catch(() => {});
+                btn.innerHTML = '⏸️';
+            } else {
+                music.pause();
+                btn.innerHTML = '♪';
+            }
+        }
+
+        // ==================== LOGIN & BẮT ĐẦU ====================
         document.getElementById('login-form').onsubmit = function(e) {
             e.preventDefault();
-            user.name = document.getElementById('user-id').value;
-            user.dept = document.getElementById('user-dept').value;
+            user.name = document.getElementById('user-id').value.trim();
+            user.dept = document.getElementById('user-dept').value.trim();
+
+            // Chọn ngẫu nhiên 20 câu
             selectedQuestions = [...questionBank].sort(() => 0.5 - Math.random()).slice(0, 20);
-            currentIdx = 0; score = 0;
+            currentIdx = 0;
+            score = 0;
+            userResponses = [];
+            startTime = Date.now();
+
+            // Bắt đầu nhạc nền (autoplay thường bị chặn → người dùng bấm nút cũng được)
+            const music = document.getElementById('bg-music');
+            music.play().catch(() => {});
+
             showScreen('quiz-screen');
             loadQuestion();
+
+            // Bắt đầu timer real-time
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
         };
 
         function loadQuestion() {
             const data = selectedQuestions[currentIdx];
+            
             document.getElementById('question-number').innerText = `Câu hỏi ${currentIdx + 1}/20`;
             document.getElementById('question-text').innerText = data.q;
             document.getElementById('explanation-box').classList.add('hidden');
             document.getElementById('next-btn').classList.add('hidden');
-            
+
+            // Cập nhật tiến trình real-time
+            document.getElementById('progress-text').innerText = `${currentIdx + 1}/20`;
+            document.getElementById('progress-fill').style.width = `${((currentIdx + 1) / 20) * 100}%`;
+
             const container = document.getElementById('options-container');
             container.innerHTML = '';
             
-            // Shuffling options
             const options = [...data.a].sort(() => 0.5 - Math.random());
-            
             options.forEach((opt, idx) => {
                 const btn = document.createElement('button');
                 btn.className = "w-full text-left p-4 border-2 border-gray-100 rounded hover:border-gold transition flex items-center gap-4 group";
@@ -338,6 +570,15 @@
 
         function checkAnswer(selected, correct, btn) {
             if (!document.getElementById('next-btn').classList.contains('hidden')) return;
+
+            // Lưu kết quả chi tiết cho báo cáo
+            userResponses[currentIdx] = {
+                q: selectedQuestions[currentIdx].q,
+                selected: selected,
+                correct: correct,
+                isCorrect: selected === correct
+            };
+
             const btns = document.querySelectorAll('#options-container button');
             btns.forEach(b => {
                 const txt = b.querySelector('span:last-child').innerText;
@@ -345,7 +586,9 @@
                 if (txt === selected && selected !== correct) b.classList.add('wrong-opt');
                 b.disabled = true;
             });
+
             if (selected === correct) score++;
+
             document.getElementById('explanation-text').innerText = selectedQuestions[currentIdx].e;
             document.getElementById('explanation-box').classList.remove('hidden');
             document.getElementById('next-btn').classList.remove('hidden');
@@ -353,56 +596,113 @@
 
         function nextQuestion() {
             currentIdx++;
-            if (currentIdx < 20) loadQuestion();
-            else finish();
+            if (currentIdx < 20) {
+                loadQuestion();
+            } else {
+                finish();
+            }
         }
 
         function finish() {
+            clearInterval(timerInterval);
+            timeTaken = Date.now() - startTime;
             document.getElementById('res-score').innerText = `${score}/20`;
-            saveScore(user.name, user.dept, score);
+            document.getElementById('res-time').innerText = `${Math.floor(timeTaken/60000)}:${(Math.floor(timeTaken/1000)%60).toString().padStart(2,'0')}`;
+
+            saveScore(user.name, user.dept, score, timeTaken);   // leaderboard
+            saveFullAttempt();                                   // ← LƯU CHI TIẾT CHO ADMIN
+
             showScreen('result-screen');
         }
 
-        function saveScore(name, dept, s) {
+function saveScore(name, dept, s, t) {
             let lb = JSON.parse(localStorage.getItem('justice_lb_v2') || '[]');
-            lb.push({ name, dept, score: s, date: new Date().getTime() });
-            lb.sort((a,b) => b.score - a.score);
+            lb.push({ 
+                name, 
+                dept, 
+                score: s, 
+                time: t, 
+                date: new Date().getTime() 
+            });
+            
+            // XẾP HẠNG THEO ĐIỂM ↓ rồi THỜI GIAN ↑ (nhanh hơn đứng trên)
+            lb.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return a.time - b.time;
+            });
+            
             localStorage.setItem('justice_lb_v2', JSON.stringify(lb.slice(0, 20)));
         }
 
         function showLeaderboard() {
             const list = document.getElementById('leaderboard-list');
             let lb = JSON.parse(localStorage.getItem('justice_lb_v2') || '[]');
-            list.innerHTML = lb.length? lb.map((item, idx) => `
+            
+            list.innerHTML = lb.length ? lb.map((item, idx) => `
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded border-l-4 ${idx < 3 ? 'border-gold' : 'border-gray-200'}">
                     <div class="flex items-center gap-4">
-                        <span class="font-black text-gray-300">#${idx + 1}</span>
-                        <div><p class="font-bold text-sm text-[#002244]">${item.name}</p><p class="text-[9px] uppercase text-gray-400 font-bold">${item.dept}</p></div>
+                        <span class="font-black text-gray-300 text-xl">#${idx + 1}</span>
+                        <div>
+                            <p class="font-bold text-sm text-[#002244]">${item.name}</p>
+                            <p class="text-[10px] uppercase text-gray-400 font-bold">${item.dept}</p>
+                        </div>
                     </div>
-                    <span class="font-black text-[#002244]">${item.score}/20</span>
+                    <div class="text-right">
+                        <div class="font-black text-2xl text-[#002244]">${item.score}/20</div>
+                        <div class="text-xs font-mono text-gray-500">${formatTime(item.time)}</div>
+                    </div>
                 </div>
             `).join('') : '<p class="text-center py-10 text-gray-400 italic">Chưa có dữ liệu.</p>';
+            
             document.getElementById('leaderboard-overlay').classList.remove('hidden');
         }
 
-        function downloadCertificate() {
-            document.getElementById('pdf-name').innerText = user.name;
-            document.getElementById('pdf-date').innerText = new Date().toLocaleDateString('vi-VN');
-            document.getElementById('pdf-score').innerText = `${score}/20`;
+
+
+        // BÁO CÁO CHI TIẾT - FILE TRỰC QUAN MỚI
+        function downloadDetailedReport() {
+            const template = document.getElementById('detailed-report-template');
             
-            const element = document.getElementById('cert-pdf-template');
-            element.style.display = 'block';
-            
+            document.getElementById('report-name').innerText = user.name;
+            document.getElementById('report-dept').innerText = user.dept;
+            document.getElementById('report-score').innerText = score;
+            document.getElementById('report-time').innerText = formatTime(timeTaken);
+            document.getElementById('report-date').innerText = new Date().toLocaleDateString('vi-VN');
+            document.getElementById('report-datetime').innerText = new Date().toLocaleString('vi-VN');
+
+            const tbody = document.getElementById('report-body');
+            tbody.innerHTML = '';
+
+            userResponses.forEach((resp, i) => {
+                const rowHTML = `
+                    <tr>
+                        <td class="text-center font-bold">${i + 1}</td>
+                        <td>${resp.q}</td>
+                        <td>
+                            <span class="${resp.isCorrect ? 'text-emerald-600' : 'text-red-600'}">${resp.selected}</span>
+                            ${!resp.isCorrect ? `<br><span class="text-xs text-gray-500">Đáp án đúng: ${resp.correct}</span>` : ''}
+                        </td>
+                        <td class="text-center">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${resp.isCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
+                                ${resp.isCorrect ? '✓ ĐÚNG' : '✗ SAI'}
+                            </span>
+                        </td>
+                    </tr>`;
+                tbody.innerHTML += rowHTML;
+            });
+
+            template.style.display = 'block';
+
             const opt = {
-                margin: 0,
-                filename: `ChungNhan_AI_${user.name.replace(/\s+/g, '_')}.pdf`,
-                image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 3, useCORS: true },
-                jsPDF: { unit: 'px', format: [842, 595], orientation: 'landscape' }
+                margin: [15, 15, 15, 15],
+                filename: `BaoCao_ChiTiet_${user.name.replace(/\s+/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'px', format: [842, 1190], orientation: 'portrait' }
             };
 
-            html2pdf().set(opt).from(element).save().then(() => {
-                element.style.display = 'none';
+            html2pdf().set(opt).from(template).save().then(() => {
+                template.style.display = 'none';
             });
         }
 
@@ -419,6 +719,11 @@
             ['login-screen', 'quiz-screen', 'result-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
+
+        // Cleanup khi reload
+        window.addEventListener('beforeunload', () => {
+            if (timerInterval) clearInterval(timerInterval);
+        });
     </script>
 </body>
 </html>
